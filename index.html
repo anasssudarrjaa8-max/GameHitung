@@ -1,1 +1,205 @@
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Hitung Cepat</title>
+
+<style>
+
+body{
+    font-family:Arial,sans-serif;
+    background:#2196F3;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    margin:0;
+}
+
+.container{
+    width:90%;
+    max-width:400px;
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0 0 15px rgba(0,0,0,.3);
+}
+
+h2{
+    color:#1976D2;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin:8px 0;
+    font-size:18px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    background:#1976D2;
+    color:white;
+}
+
+input{
+    width:90%;
+    padding:12px;
+    font-size:22px;
+    text-align:center;
+    margin:10px 0;
+}
+
+.info{
+    display:flex;
+    justify-content:space-between;
+    font-size:20px;
+    font-weight:bold;
+    margin:15px 0;
+}
+
+#soal{
+    font-size:35px;
+    margin:20px;
+    font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>🧮 Game Hitung Cepat</h2>
+
+<button onclick="mulaiGame()">
+Mulai Game
+</button>
+
+<div class="info">
+
+<div>
+⏱
+<span id="timer">
+60
+</span>
+</div>
+
+<div>
+⭐
+<span id="score">
+0
+</span>
+</div>
+
+</div>
+
+<div id="soal">
+
+Tekan Mulai
+
+</div>
+
+<input
+type="number"
+id="jawaban"
+placeholder="Jawaban">
+
+<button onclick="cekJawaban()">
+
+ENTER
+
+</button>
+
+<div id="hasil"></div>
+
+</div>
+
+<script>
+
+let angka1;
+let angka2;
+let jawaban;
+
+let skor=0;
+
+let waktu=60;
+
+let timer;
+
+function mulaiGame(){
+
+clearInterval(timer);
+
+skor=0;
+
+waktu=60;
+
+document.getElementById("score").innerHTML=0;
+
+document.getElementById("hasil").innerHTML="";
+
+buatSoal();
+
+timer=setInterval(function(){
+
+waktu--;
+
+document.getElementById("timer").innerHTML=waktu;
+
+if(waktu<=0){
+
+clearInterval(timer);
+
+document.getElementById("soal").innerHTML="GAME SELESAI";
+
+document.getElementById("hasil").innerHTML=
+"<h3>Skor Kamu : "+skor+"</h3>";
+
+}
+
+},1000);
+
+}
+
+function buatSoal(){
+
+angka1=Math.floor(Math.random()*20)+1;
+
+angka2=Math.floor(Math.random()*20)+1;
+
+jawaban=angka1+angka2;
+
+document.getElementById("soal").innerHTML=
+angka1+" + "+angka2+" = ?";
+
+document.getElementById("jawaban").value="";
+
+}
+
+function cekJawaban(){
+
+let isi=
+parseInt(document.getElementById("jawaban").value);
+
+if(isi==jawaban){
+
+skor+=10;
+
+document.getElementById("score").innerHTML=skor;
+
+}
+
+buatSoal();
+
+}
+
+</script>
+
+</body>
+</html>
 
