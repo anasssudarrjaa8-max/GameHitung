@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Keuangan - Pemasukan & Pengeluaran Mingguan</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#121b2f;
+      --text:#e8eefc;
+      --muted:#a9b6da;
+      --primary:#4f8cff;
+      --danger:#ff5c7a;
+      --success:#35d07f;
+      --border:rgba(255,255,255,.10);
+    }
+    body{font-family: Arial, Helvetica, sans-serif; margin:0; background:var(--bg); color:var(--text);}
+    header{padding:18px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; background:rgba(11,18,32,.9); backdrop-filter: blur(6px); z-index:10;}
+    header h1{margin:0; font-size:18px;}
+    header p{margin:6px 0 0; color:var(--muted); font-size:13px;}
+    .container{max-width:1100px; margin:0 auto; padding:16px;}
+    .grid{display:grid; grid-template-columns: 380px 1fr; gap:14px;}
+    @media (max-width: 900px){ .grid{grid-template-columns: 1fr; } }
+
+    /* Supaya nyaman di HP */
+    .card{min-width:0;}
+    table th, table td{white-space:nowrap;}
+    @media (max-width: 520px){
+      header h1{font-size:16px;}
+      .container{padding:12px;}
+      input, select{padding:11px 10px;}
+      table th, table td{font-size:12px;}
+    }
+
+
+    .card{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px;}
+    .card h2{margin:0 0 10px; font-size:16px;}
+
+    .row{display:flex; gap:10px; align-items:center; margin:10px 0;}
+    label{flex:1; color:var(--muted); font-size:13px;}
+    input, select{flex:1.2; padding:10px 10px; border-radius:10px; border:1px solid var(--border); background:transparent; color:var(--text); outline:none;}
+    input::placeholder{color:rgba(233,238,252,.35)}
+
+    button{padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:transparent; color:var(--text); cursor:pointer;}
+    button.primary{background:var(--primary); border-color:transparent; color:#0b1220; font-weight:700;}
+    button.danger{background:rgba(255,92,122,.14); border-color:rgba(255,92,122,.4); color:var(--danger);}
+
+    .hint{color:var(--muted); font-size:12px; line-height:1.4; margin-top:8px;}
+
+    table{width:100%; border-collapse:collapse; overflow:hidden; border-radius:12px;}
+    th, td{padding:10px; border-bottom:1px solid var(--border); text-align:left; font-size:13px;}
+    th{color:var(--muted); font-weight:700; background:rgba(255,255,255,.03);}
+    tr:last-child td{border-bottom:none;}
+    .right{text-align:right;}
+    .badge{display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; border:1px solid var(--border);}
+    .badge.in{border-color:rgba(53,208,127,.45); color:var(--success); background:rgba(53,208,127,.10)}
+    .badge.out{border-color:rgba(255,92,122,.45); color:var(--danger); background:rgba(255,92,122,.10)}
+
+    .summary{display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:10px;}
+    @media (max-width: 900px){ .summary{grid-template-columns: 1fr; } }
+    .kpi{padding:12px; border-radius:12px; border:1px solid var(--border); background:rgba(255,255,255,.02)}
+    .kpi .title{color:var(--muted); font-size:12px;}
+    .kpi .value{font-size:18px; margin-top:6px; font-weight:800;}
+
+    .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin:6px 0 12px;}
+    .toolbar .left{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Keuangan - Pemasukan & Pengeluaran Mingguan</h1>
+    <p>Input transaksi per hari. Ringkasan otomatis diakumulasikan tiap hari Minggu.</p>
+  </header>
+
+  <div class="container">
+    <div class="grid">
+      <!-- Input -->
+      <section class="card">
+        <h2>Tambah Transaksi</h2>
+
+        <div class="row">
+          <label for="tanggal">Tanggal</label>
+          <input type="date" id="tanggal" />
+        </div>
+
+        <div class="row">
+          <label for="jenis">Jenis</label>
+          <select id="jenis">
+            <option value="pemasukan">Pemasukan</option>
+            <option value="pengeluaran">Pengeluaran</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label for="deskripsi">Deskripsi</label>
+          <input type="text" id="deskripsi" placeholder="mis. Gaji / Beli makan" />
+        </div>
+
+        <div class="row">
+          <label for="jumlah">Jumlah (Rp)</label>
+          <input type="number" id="jumlah" placeholder="contoh: 50000" min="0" step="1" />
+        </div>
+
+        <div class="row">
+          <button class="primary" id="btnTambah">Tambah</button>
+          <button class="danger" id="btnReset">Reset Data</button>
+        </div>
+
+        <div class="hint">
+          Data tersimpan otomatis di browser (localStorage).
+          <br/>Catatan: Minggu di-set sebagai akhir periode (Sun). Akumulasi menampilkan total dalam minggu yang memuat tanggal transaksi.
+        </div>
+      </section>
+
+      <!-- Tabel & Ringkasan -->
+      <section class="card">
+        <div class="toolbar">
+          <div class="left">
+            <div>
+              <div style="color:var(--muted); font-size:12px;">Tampilkan</div>
+              <select id="filterMinggu" style="min-width:220px;">
+                <option value="all">Semua Minggu</option>
+              </select>
+            </div>
+
+            <div>
+              <div style="color:var(--muted); font-size:12px;">Urutkan</div>
+              <select id="filterUrut" style="min-width:180px;">
+                <option value="desc">Tanggal Terbaru</option>
+                <option value="asc">Tanggal Terlama</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary" id="summary">
+          <div class="kpi">
+            <div class="title">Total Pemasukan</div>
+            <div class="value" id="kpiIn">Rp 0</div>
+          </div>
+          <div class="kpi">
+            <div class="title">Total Pengeluaran</div>
+            <div class="value" id="kpiOut">Rp 0</div>
+          </div>
+          <div class="kpi">
+            <div class="title">Saldo (Masuk - Keluar)</div>
+            <div class="value" id="kpiSaldo">Rp 0</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px; overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:110px;">Tanggal</th>
+                <th style="min-width:130px;">Minggu (Sun)</th>
+                <th>Deskripsi</th>
+                <th style="min-width:140px;">Jenis</th>
+                <th class="right" style="min-width:150px;">Jumlah</th>
+                <th style="min-width:90px;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tbody">
+              <tr><td colspan="6" style="color:var(--muted);">Belum ada data.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="hint" style="margin-top:10px;">
+          Akumulasi mingguan: transaksi dikelompokkan berdasarkan minggu yang berakhir pada hari Minggu.
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'keuangan_transaksi_v1';
+
+    const $ = (id) => document.getElementById(id);
+
+    const tanggalEl = $('tanggal');
+    const jenisEl = $('jenis');
+    const deskripsiEl = $('deskripsi');
+    const jumlahEl = $('jumlah');
+    const btnTambah = $('btnTambah');
+    const btnReset = $('btnReset');
+
+    const filterMingguEl = $('filterMinggu');
+    const filterUrutEl = $('filterUrut');
+
+    const tbody = $('tbody');
+    const kpiIn = $('kpiIn');
+    const kpiOut = $('kpiOut');
+    const kpiSaldo = $('kpiSaldo');
+
+    function formatRp(n){
+      const num = Number(n) || 0;
+      return 'Rp ' + num.toLocaleString('id-ID');
+    }
+
+    function toISODate(d){
+      // d: Date
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const day = String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function parseISODate(iso){
+      const [y,m,day] = iso.split('-').map(Number);
+      return new Date(y, m-1, day);
+    }
+
+    // Cari tanggal akhir minggu (Minggu / Sunday) untuk tanggal input.
+    // Monday..Sunday => weekEnd adalah Sunday.
+    function getWeekEndingSunday(date){
+      const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const day = d.getDay(); // 0=Sun..6=Sat
+      const diff = (7 - day) % 7;
+      d.setDate(d.getDate() + diff);
+      return d;
+    }
+
+    function formatWeekLabel(weekEndDate){
+      const start = new Date(weekEndDate);
+      start.setDate(start.getDate() - 6);
+      return `${toISODate(start)} s/d ${toISODate(weekEndDate)}`;
+    }
+
+    function load(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        if(!Array.isArray(arr)) return [];
+        return arr;
+      }catch{
+        return [];
+      }
+    }
+
+    function save(arr){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+    }
+
+    function uid(){
+      return Math.random().toString(16).slice(2) + '-' + Date.now().toString(16);
+    }
+
+    let transaksi = load();
+
+    function normalizeTransaksi(t){
+      return {
+        id: String(t.id ?? uid()),
+        tanggal: String(t.tanggal),
+        jenis: t.jenis === 'pengeluaran' ? 'pengeluaran' : 'pemasukan',
+        deskripsi: String(t.deskripsi ?? ''),
+        jumlah: Number(t.jumlah ?? 0)
+      };
+    }
+
+    transaksi = transaksi.map(normalizeTransaksi);
+    save(transaksi);
+
+    function getComputedRows(){
+      // hitung weekEndingSunday
+      return transaksi.map(t => {
+        const dt = parseISODate(t.tanggal);
+        const weekEnd = getWeekEndingSunday(dt);
+        return {
+          ...t,
+          weekEndISO: toISODate(weekEnd),
+          weekLabel: formatWeekLabel(weekEnd)
+        };
+      });
+    }
+
+    function applyFilter(rows){
+      const selWeek = filterMingguEl.value;
+      const urut = filterUrutEl.value;
+
+      let filtered = rows;
+      if(selWeek !== 'all'){
+        filtered = filtered.filter(r => r.weekEndISO === selWeek);
+      }
+
+      filtered.sort((a,b) => {
+        const da = parseISODate(a.tanggal).getTime();
+        const db = parseISODate(b.tanggal).getTime();
+        return urut === 'asc' ? (da - db) : (db - da);
+      });
+
+      return filtered;
+    }
+
+    function updateFilterOptions(rows){
+      const weeks = Array.from(new Set(rows.map(r => r.weekEndISO))).sort();
+      const current = filterMingguEl.value;
+
+      // rebuild options
+      filterMingguEl.innerHTML = '';
+      const optAll = document.createElement('option');
+      optAll.value = 'all';
+      optAll.textContent = 'Semua Minggu';
+      filterMingguEl.appendChild(optAll);
+
+      for(const w of weeks){
+        const label = formatWeekLabel(parseISODate(w));
+        const opt = document.createElement('option');
+        opt.value = w;
+        opt.textContent = label;
+        filterMingguEl.appendChild(opt);
+      }
+
+      if(weeks.includes(current)){
+        filterMingguEl.value = current;
+      } else {
+        filterMingguEl.value = 'all';
+      }
+    }
+
+    function updateKPIs(rows){
+      let sumIn = 0;
+      let sumOut = 0;
+      for(const r of rows){
+        if(r.jenis === 'pemasukan') sumIn += r.jumlah;
+        else sumOut += r.jumlah;
+      }
+      const saldo = sumIn - sumOut;
+      kpiIn.textContent = formatRp(sumIn);
+      kpiOut.textContent = formatRp(sumOut);
+      kpiSaldo.textContent = formatRp(saldo);
+    }
+
+    function render(){
+      const computed = getComputedRows();
+      updateFilterOptions(computed);
+
+      const filtered = applyFilter(computed);
+      updateKPIs(filtered);
+
+      if(filtered.length === 0){
+        tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);">Belum ada data untuk filter ini.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(r => {
+        const badge = r.jenis === 'pemasukan'
+          ? `<span class="badge in">Pemasukan</span>`
+          : `<span class="badge out">Pengeluaran</span>`;
+
+        return `
+          <tr>
+            <td>${r.tanggal}</td>
+            <td>${r.weekLabel}</td>
+            <td>${escapeHtml(r.deskripsi)}</td>
+            <td>${badge}</td>
+            <td class="right">${formatRp(r.jumlah)}</td>
+            <td>
+              <button class="danger" data-id="${r.id}" title="Hapus" style="padding:7px 10px;">Hapus</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','<')
+        .replaceAll('>','>')
+        .replaceAll('"','"')
+        .replaceAll("'",'&#039;');
+    }
+
+    btnTambah.addEventListener('click', () => {
+      const tanggal = tanggalEl.value;
+      const jenis = jenisEl.value;
+      const deskripsi = deskripsiEl.value.trim();
+      const jumlah = Number(jumlahEl.value);
+
+      if(!tanggal){ alert('Pilih tanggal terlebih dahulu.'); return; }
+      if(!deskripsi){ alert('Masukkan deskripsi.'); return; }
+      if(!Number.isFinite(jumlah) || jumlah <= 0){ alert('Masukkan jumlah > 0.'); return; }
+
+      transaksi.push({
+        id: uid(),
+        tanggal,
+        jenis,
+        deskripsi,
+        jumlah
+      });
+
+      save(transaksi);
+
+      // bersihkan input
+      deskripsiEl.value = '';
+      jumlahEl.value = '';
+
+      render();
+    });
+
+    btnReset.addEventListener('click', () => {
+      const ok = confirm('Reset semua data keuangan?');
+      if(!ok) return;
+      transaksi = [];
+      save(transaksi);
+      render();
+    });
+
+    filterMingguEl.addEventListener('change', render);
+    filterUrutEl.addEventListener('change', render);
+
+    tbody.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-id]');
+      if(!btn) return;
+      const id = btn.getAttribute('data-id');
+      const ok = confirm('Hapus transaksi ini?');
+      if(!ok) return;
+
+      transaksi = transaksi.filter(t => String(t.id) !== id);
+      save(transaksi);
+      render();
+    });
+
+    // init default date = hari ini
+    (function init(){
+      const today = new Date();
+      tanggalEl.value = toISODate(today);
+      render();
+    })();
+  </script>
+</body>
+</html>
+
